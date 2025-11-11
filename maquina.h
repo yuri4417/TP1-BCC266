@@ -8,5 +8,5 @@ typedef struct {
     int endereco3;
 } Instrucao;
 
-void maquina(int *ram, Instrucao* programa);
+void maquina(int *ram, Instrucao *programa);
 #endif

@@ -24,10 +24,15 @@ int* criaRandomRam(int tam) {
     if (ram == NULL)
         return NULL;
     
-        for (int i = 0; i < tam; i++) 
-            ram[i] = rand();
+    for (int i = 0; i < tam; i++) 
+        ram[i] = rand();
 
     return ram;
+}
+
+void liberaRAM(int* ram) {
+    if (ram)
+        free(ram);
 }
 
 void store(int* ram, int pos, int dado) {
