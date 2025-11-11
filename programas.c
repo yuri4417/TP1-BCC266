@@ -11,11 +11,17 @@ void programaAleatorio(int qtdeInstrucoes) {
 
     for (int i = 0; i < qtdeInstrucoes - 1; i++) {
         programa[i].opcode = rand() % 2;
-        programa[i].endereco1 = rand() % (tamRAM + 1);
-        programa[i].endereco2 = rand() % (tamRAM + 1);
-        programa[i].endereco3 = rand() % (tamRAM + 1);
+        programa[i].endereco1 = rand() % (tamRAM - 1);
+        programa[i].endereco2 = rand() % (tamRAM - 1);
+        programa[i].endereco3 = rand() % (tamRAM - 1);
     }
     programa[qtdeInstrucoes-1].opcode = -1;
 
     maquina(RAM, programa);
+}
+
+void programaMultiplica(int multiplicando, int multiplicador) {
+
+
+    
 }
