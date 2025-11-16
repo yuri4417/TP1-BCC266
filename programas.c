@@ -532,9 +532,7 @@ void programaPA(int A1, int razao, int qtdTermos) {
         pegaTermo[2].opcode = -1;
         maquina(RAM, pegaTermo);
         int termo = pegaTermo[1].endereco2;
-        printf("%d", termo);
-        if (i < (5 + qtdTermos))
-            printf(", "); 
+        printf("%d ", termo); 
     }
     printf(")\n");
 
@@ -744,7 +742,7 @@ void programaPG(int A1, int razao, int qtdTermos) {
     printf("P.G. (a1 = %d, r = %d) -> (", A1, razao);
     for (int i = 6; i < (6 + qtdTermos); i++) {
 
-        Instrucao pegaTermo[3]
+        Instrucao pegaTermo[3];
         pegaTermo[0].opcode = 3;
         pegaTermo[0].endereco1 = 1;
         pegaTermo[0].endereco2 = i;
@@ -781,3 +779,196 @@ void programaPG(int A1, int razao, int qtdTermos) {
     liberaRAM(RAM);
 }
 
+void programaTrianguloRet(int catA, int catB) {
+    int *RAM = criaRam_vazia(10);
+
+    // Esquema Ram -> [LIXO, LIXO, LIXO, LIXO, hipotenusa, area, perimetro, cateto A, cateto B, 0]
+
+    Instrucao initCAT[5];
+    initCAT[0].opcode = 4;
+    initCAT[0].endereco1 = 1;
+    initCAT[0].endereco2 = catA;
+
+    initCAT[1].opcode = 4;
+    initCAT[1].endereco1 = 2;
+    initCAT[1].endereco2 = catB;
+
+    initCAT[2].opcode = 2;
+    initCAT[2].endereco1 = 1;
+    initCAT[2].endereco2 = 7;
+
+    initCAT[3].opcode = 2;
+    initCAT[3].endereco1 = 2;
+    initCAT[3].endereco2 = 8;
+
+    initCAT[4].opcode = -1;
+    maquina(RAM, initCAT);
+    //Ram -> [0, 0, 0, 0, 0, 0, 0, cateto A, cateto B, 0]
+
+    Instrucao pegaCAT[5];
+    pegaCAT[0].opcode = 3;
+    pegaCAT[0].endereco1 = 1;
+    pegaCAT[0].endereco2 = 7;
+
+    pegaCAT[1].opcode = 3;
+    pegaCAT[1].endereco1 = 2;
+    pegaCAT[1].endereco2 = 8;
+
+    pegaCAT[2].opcode = 5;
+    pegaCAT[2].endereco1 = 1;
+    pegaCAT[2].endereco2 = -1;
+
+    pegaCAT[3].opcode = 5;
+    pegaCAT[3].endereco1 = 2;
+    pegaCAT[3].endereco2 = -1;
+
+    pegaCAT[4].opcode = -1;
+    maquina(RAM, pegaCAT);
+    int catA_maq = pegaCAT[2].endereco2;
+    int catB_maq = pegaCAT[3].endereco2;
+
+    programaMultiplica(RAM, catA_maq, catA_maq);
+    //Ram -> [A², 0, 0, 0, 0, 0, 0, cateto A, cateto B, 0]
+
+    Instrucao moveCAT[3];
+    moveCAT[0].opcode = 3;
+    moveCAT[0].endereco1 = 1;
+    moveCAT[0].endereco2 = 0;
+
+    moveCAT[1].opcode = 2;
+    moveCAT[1].endereco1 = 1;
+    moveCAT[1].endereco2 = 2;
+
+    moveCAT[2].opcode = -1;
+    maquina(RAM, moveCAT);
+    //Ram -> [A², 0, A², 0, 0, 0, 0, cateto A, cateto B, 0]
+    programaMultiplica(RAM, catB_maq, catB_maq);
+    //Ram -> [B², 0, A², 0, 0, 0, 0, cateto A, cateto B, 0]
+
+    Instrucao somaCAT[2];
+
+    somaCAT[0].opcode = 0;
+    somaCAT[0].endereco1 = 0;
+    somaCAT[0].endereco2 = 2;
+    somaCAT[0].endereco3 = 9;
+
+    somaCAT[1].opcode = -1;
+    maquina(RAM, somaCAT);
+    //Ram -> [B², 0, A², 0, 0, 0, 0, cateto A, cateto B, A²+B²]
+
+    Instrucao pegaSoma[3];
+    pegaSoma[0].opcode = 3;
+    pegaSoma[0].endereco1 = 1;
+    pegaSoma[0].endereco2 = 9;
+
+    pegaSoma[1].opcode = 5;
+    pegaSoma[1].endereco1 = 1;
+    pegaSoma[1].endereco2 = -1;
+
+    pegaSoma[2].opcode = -1;
+    maquina(RAM, pegaSoma);
+    int soma =  pegaSoma[1].endereco2; 
+
+    programaRaizQuad(RAM, soma);
+    //Ram -> [raiz, LIXO, LIXO, LIXO, LIXO, LIXO, LIXO, cateto A, cateto B, A²+B²]
+
+    Instrucao moveResult[3];
+    moveResult[0].opcode = 3;
+    moveResult[0].endereco1 = 1;
+    moveResult[0].endereco2 = 0;
+
+    moveResult[1].opcode = 2;
+    moveResult[1].endereco1 = 1;
+    moveResult[1].endereco2 = 4;
+
+    moveResult[2].opcode = -1;
+    maquina(RAM, moveResult);
+    //Ram -> [raiz, LIXO, LIXO, LIXO, hipotenusa, LIXO, LIXO, cateto A, cateto B, LIXO]
+
+    programaMultiplica(RAM, catA_maq, catB_maq);
+    //Ram -> [result, LIXO, LIXO, LIXO, hipotenusa, LIXO, LIXO, cateto A, cateto B, LIXO]
+
+    Instrucao pegaMult[3];
+    pegaMult[0].opcode = 3;
+    pegaMult[0].endereco1 = 1;
+    pegaMult[0].endereco2 = 0;
+
+    pegaMult[1].opcode = 5;
+    pegaMult[1].endereco1 = 1;
+    pegaMult[1].endereco2 = -2;
+
+    pegaMult[2].opcode = -1;
+    maquina(RAM, pegaMult);
+    int mult = pegaMult[1].endereco2;
+    programaDivisao(RAM, mult, 2);
+
+    Instrucao moveArea[3];
+    moveArea[0].opcode = 3;
+    moveArea[0].endereco1 = 1;
+    moveArea[0].endereco2 = 0;
+
+    moveArea[1].opcode = 2;
+    moveArea[1].endereco1 = 1;
+    moveArea[1].endereco2 = 5;
+
+    moveArea[2].opcode = -1;
+    maquina(RAM, moveArea);
+    //Ram -> [LIXO, LIXO, LIXO, LIXO, hipotenusa, area, LIXO, cateto A, cateto B, LIXO]
+
+    Instrucao calcPerimetro[3];
+    calcPerimetro[0].opcode = 0;
+    calcPerimetro[0].endereco1 = 7;
+    calcPerimetro[0].endereco2 = 8;
+    calcPerimetro[0].endereco3 = 6;
+
+    calcPerimetro[1].opcode = 0;
+    calcPerimetro[1].endereco1 = 6;
+    calcPerimetro[1].endereco2 = 4;
+    calcPerimetro[1].endereco3 = 6;
+
+    calcPerimetro[2].opcode = -1;
+    maquina(RAM, calcPerimetro);
+    //Ram -> [LIXO, LIXO, LIXO, LIXO, hipotenusa, area, perimetro, cateto A, cateto B, LIXO]
+
+    Instrucao pegaResult[5];
+    pegaResult[0].opcode = 3;
+    pegaResult[0].endereco1 = 1;
+    pegaResult[0].endereco2 = 4;
+    
+    pegaResult[1].opcode = 3;
+    pegaResult[1].endereco1 = 2;
+    pegaResult[1].endereco2 = 5;
+
+    pegaResult[2].opcode = 5;
+    pegaResult[2].endereco1 = 1;
+    pegaResult[2].endereco2 = -1;
+
+    pegaResult[3].opcode = 5;
+    pegaResult[3].endereco1 = 2;
+    pegaResult[3].endereco2 = -1;
+
+    pegaResult[4].opcode = -1;
+    maquina(RAM, pegaResult);
+    int hip = pegaResult[2].endereco2;
+    int area = pegaResult[3].endereco2;
+
+    Instrucao pegaPER[3];
+    pegaPER[0].opcode = 3;
+    pegaPER[0].endereco1 = 1;
+    pegaPER[0].endereco2 = 6;
+
+    pegaPER[1].opcode = 5;
+    pegaPER[1].endereco1 = 1;
+    pegaPER[1].endereco2 = -1;
+
+    pegaPER[2].opcode = -1;
+    maquina(RAM, pegaPER);
+    int perimetro = pegaPER[1].endereco2;
+
+    printf("\t Triângulo Retangulo (a = %d, b = %d)\n", catA_maq, catB_maq);
+    printf("Hipotenusa = %d\n", hip);
+    printf("Area = %d\n", area);
+    printf("Perimetro = %d\n", perimetro);
+
+    liberaRAM(RAM);
+}

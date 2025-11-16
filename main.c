@@ -11,5 +11,6 @@ int main () {
     // programaRaizQuad(NULL, 25);
     // programaPA(0, 2, 10);
     // programaPG(1, 2, 10);
+    programaTrianguloRet(3, 5);
     return 0;
 }
