@@ -33,20 +33,16 @@ void programaAleatorio(int qtdeInstrucoes) {
 
 
 void programaMultiplica(int * RAM, int multiplicando, int multiplicador) { // RESULTADO = RAM[0]
-    int ramLocal = 0; //indica se é um programa isolado ou que faz parte de outro maior (se faz, usa a ram do programa principal)
+    int ramLocal = 0;
     if (RAM == NULL) {
         RAM = criaRam_vazia(2);
         ramLocal = 1;
     }
 
-    //Limpa o RAM[0] pros casos de multiplica ser um programa auxiliar
     salvaUmValor(RAM, 0, 0);
-
-    // Move multiplicando pro reg -> depois manda do reg pra ram
     salvaUmValor(RAM, 1, multiplicando);
     // RAM = [0, multiplicando]
 
-    //soma continua da posicao 0 com a posicao 1 da ram
     for (int i = 0; i < multiplicador; i++) {
         Instrucao mult[2];
 
@@ -74,24 +70,21 @@ void programaMultiplica(int * RAM, int multiplicando, int multiplicador) { // RE
 
 void programaDivisao(int *RAM, int dividendo, int divisor) { //RESULTADO = RAM[0]
 
-    int ramLocal = 0; //indica se é um programa isolado ou que faz parte de outro maior (se faz, usa a ram do programa principal)
+    int ramLocal = 0;
     if (RAM == NULL) {
         RAM = criaRam_vazia(4);
         ramLocal = 1;
     }
 
-    //Limpa o RAM[3] pros casos de Divisao ser um programa auxiliar
     salvaUmValor(RAM, 3, 0);
 
 
     salvaDoisValores(RAM, 0, dividendo, 1, divisor);
     //RAM = [dividendo, divisor, 0, 0]
 
-    // Salva '1' na ram para atuar como somador do contador
     salvaUmValor(RAM, 2, 1);
     //RAM = [dividendo, divisor, 1, 0]
 
-    //Subtrai o divisor do dividendo, incrementa 1 no contador e atualiza o dividendo
     while (dividendo >= divisor) {
         Instrucao div[3];
 
@@ -110,25 +103,36 @@ void programaDivisao(int *RAM, int dividendo, int divisor) { //RESULTADO = RAM[0
         extraiRAM(RAM, 0, &dividendo);
     }
 
-    //Manda o resultado final da ram pro reg -> depois do reg pro exterior
-    Instrucao move2[4];
+    Instrucao organiza[6]; 
+    organiza[0].opcode = 3;   
+    organiza[0].endereco1 = 1;
+    organiza[0].endereco2 = 0;
 
-    move2[0].opcode = 3;
-    move2[0].endereco1 = 1;
-    move2[0].endereco2 = 3;
+    organiza[1].opcode = 3;   
+    organiza[1].endereco1 = 2;
+    organiza[1].endereco2 = 3;
 
-    move2[1].opcode = 2;
-    move2[1].endereco1 = 1;
-    move2[1].endereco2 = 0;
+    
+    organiza[2].opcode = 2;   
+    organiza[2].endereco1 = 1;
+    organiza[2].endereco2 = 1;
 
-    move2[2].opcode = 5;
-    move2[2].endereco1 = 1;
-    move2[2].endereco2 = -1;
+    
+    organiza[3].opcode = 2;   
+    organiza[3].endereco1 = 2;
+    organiza[3].endereco2 = 0;
 
-    move2[3].opcode = -1;
+    
+    organiza[4].opcode = 5;   
+    organiza[4].endereco1 = 2;
+    organiza[4].endereco2 = -1;
 
-    maquina(RAM,move2);
-    printf("DIV: Resultado da divisao: %d\n", move2[2].endereco2);
+    organiza[5].opcode = -1;
+    maquina(RAM, organiza);
+    // RAM = [resultado, resto, lixo, lixo]
+
+    int result = organiza[4].endereco2;
+    printf("DIV: Resultado da divisao: %d\n", result);
 
     // printRam(RAM, 4);
     if (ramLocal)
@@ -136,7 +140,7 @@ void programaDivisao(int *RAM, int dividendo, int divisor) { //RESULTADO = RAM[0
 }
 
 void programaRaizQuad(int* RAM, int radicando) { //RESULTADO == RAM[0]
-    int ramLocal = 0; //indica se é um programa isolado ou que faz parte de outro maior (se faz, usa a ram do programa principal)
+    int ramLocal = 0; 
     if (RAM == NULL) {
         RAM = criaRam_vazia(7);
         ramLocal = 1;
@@ -146,14 +150,13 @@ void programaRaizQuad(int* RAM, int radicando) { //RESULTADO == RAM[0]
 
 
 
-    //Move o radicando e '1' pros regs -> depois dos regs pra ram
     salvaDoisValores(RAM, 2, radicando, 6, 1);
     //ram -> [0, 0, radicando, 0, 0, 0, 1]
+
     int result = INT_MAX;
     while (result >= 0) {
 
         Instrucao copia[3];
-        //faz a copia do contador (ultimo valor valido) pro resultado final
         copia[0].opcode  = 3;
         copia[0].endereco1 = 1;
         copia[0].endereco2 = 5;
@@ -168,7 +171,6 @@ void programaRaizQuad(int* RAM, int radicando) { //RESULTADO == RAM[0]
 
 
         Instrucao sum[2];
-        //Incrementa o contador p testar o proximo quadrado
         sum[0].opcode = 0;
         sum[0].endereco1 = 5;
         sum[0].endereco2 = 6;
@@ -177,13 +179,12 @@ void programaRaizQuad(int* RAM, int radicando) { //RESULTADO == RAM[0]
         sum[1].opcode = -1;
 
         maquina(RAM, sum);
-        //RAM -> [0, 0, radicando, counter, 0, counter + 1, result]
+
         int y; 
         extraiRAM(RAM, 5, &y);
         programaMultiplica(RAM, y, y);
-        //RAM -> [y^2, y, radicando, counter, 0, counter + 1, result]
+        //RAM -> [y^2, y, radicando, counter, 0, counter + 1, 1]
 
-        // Faz radicando - y^2
         Instrucao sub[2];
         sub[0].opcode = 1;
         sub[0].endereco1 = 2;
@@ -193,7 +194,7 @@ void programaRaizQuad(int* RAM, int radicando) { //RESULTADO == RAM[0]
         sub[1].opcode = -1;
 
         maquina(RAM, sub);
-        //RAM -> [y^2, y, radicando, counter, result, counter + 1, result]
+        //RAM -> [y^2, y, radicando, counter, result, counter + 1, 1]
 
         extraiRAM(RAM, 4, &result);
     }
@@ -222,14 +223,13 @@ void programaRaizQuad(int* RAM, int radicando) { //RESULTADO == RAM[0]
 }
 
 void programaPA(int A1, int razao, int qtdTermos) {
-    int *RAM = criaRam_vazia(7 + (qtdTermos - 1)); // espacos fixos + tamanho da sequencia
+    int *RAM = criaRam_vazia(7 + (qtdTermos - 1)); 
     
     //RAM -> [programamultiplica, programamultiplica, razao, contadorPosPA, contadorWhile, 1, A1, P.A...]
 
-    //Move A1, razao, constante 1, contadorPos pra RAM
+  
     salvaDoisValores(RAM, 6, A1, 2, razao);
     salvaDoisValores(RAM, 5, 1, 3, 7);
-    //RAM -> [0, 0, razao, contadorPos, 0, 1, A1, 0....]
 
 
     salvaUmValor(RAM, 4, qtdTermos);
@@ -247,7 +247,6 @@ void programaPA(int A1, int razao, int qtdTermos) {
     //RAM -> [0, 0, razao, contadorPos, contadorWhile, 1, A1, 0....]
 
     while (contadorWhile > 0) {
-        // Pega a posicao anterior para calcular pra proxima
         Instrucao copiaPOS[2];
         copiaPOS[0].opcode = 1;
         copiaPOS[0].endereco1 = 3;
@@ -272,7 +271,6 @@ void programaPA(int A1, int razao, int qtdTermos) {
         calculaTermo[1].opcode = -1;
         maquina(RAM, calculaTermo);
         
-        // Atualiza o contador +1 pro proximo loop
         Instrucao attPos[2];
         attPos[0].opcode = 0;
         attPos[0].endereco1 = 3;
@@ -281,8 +279,7 @@ void programaPA(int A1, int razao, int qtdTermos) {
 
         attPos[1].opcode = -1;
         maquina(RAM, attPos);
-        //RAM -> [0, 0, razao, contadorPos + 1, contadorWhile, 1, A1, P.A....]
-        // Decremento contador
+
         Instrucao attContador[2];
         attContador[0].opcode = 1;
         attContador[0].endereco1 = 4;
@@ -291,16 +288,13 @@ void programaPA(int A1, int razao, int qtdTermos) {
 
         attContador[1].opcode = -1;
         maquina(RAM, attContador);
-        //RAM -> [0, 0, razao, contadorPos, contadorWhile - 1, 1, A1, P.A....]
+        //RAM -> [0, 0, razao, contadorPos + 1, contadorWhile - 1, 1, A1, P.A....]
         extraiRAM(RAM, 4, &contadorWhile);
     }
 
     salvaUmValor(RAM, 4, 0);
-    //RAM -> [0, 0, razao, contadorPos + 1, 0, 1, A1, P.A....]
-
 
     for (int i = 6; i < (6 + qtdTermos); i++) {
-
         Instrucao somaPA[2];
         somaPA[0].opcode = 0;
         somaPA[0].endereco1 = 4;
@@ -310,7 +304,7 @@ void programaPA(int A1, int razao, int qtdTermos) {
         somaPA[1].opcode = -1;
         maquina(RAM, somaPA);
     }
-    //RAM -> [0, 0, razao, contadorPos + 1, somaPA, 1, A1, P.A....]
+    //RAM -> [0, 0, razao, contadorPos, somaPA, 1, A1, P.A....]
 
     printf("P.A. (a1 = %d, r = %d) -> (", A1, razao);
     for (int i = 6; i < (6 + qtdTermos); i++) {
@@ -352,8 +346,6 @@ void programaPG(int A1, int razao, int qtdTermos) {
     int contadorWhile;
     extraiRAM(RAM, 4, &contadorWhile);
     while (contadorWhile > 0) {
-
-        // Pega pos anterior
         Instrucao copiaPos[2];
         copiaPos[0].opcode = 1;
         copiaPos[0].endereco1 = 3;
@@ -373,7 +365,7 @@ void programaPG(int A1, int razao, int qtdTermos) {
         extraiRAM(RAM, 2, &razaoRam);
 
         programaMultiplica(RAM, termoAnterior, razaoRam);
-        //RAM -> [termoAtual, lixo, razao, contadorPosPG, contadorwhile, 1, A1, 0....]
+        //RAM -> [termoAtual, LIXO, razao, contadorPosPG, contadorwhile, 1, A1, 0....]
 
         int posAtual;
         extraiRAM(RAM, 3, &posAtual);
@@ -390,7 +382,7 @@ void programaPG(int A1, int razao, int qtdTermos) {
         moveResultado[2].opcode = -1;
         maquina(RAM, moveResultado);
         
-        Instrucao attPos[2]; //att pos prox loop
+        Instrucao attPos[2]; 
         attPos[0].opcode = 0;
         attPos[0].endereco1 = 3;
         attPos[0].endereco2 = 5;
@@ -400,7 +392,7 @@ void programaPG(int A1, int razao, int qtdTermos) {
 
         maquina(RAM, attPos);
 
-        Instrucao decrementaContador[2]; //contador--
+        Instrucao decrementaContador[2];
         decrementaContador[0].opcode = 1;
         decrementaContador[0].endereco1 = 4;
         decrementaContador[0].endereco2 = 5;
@@ -438,9 +430,9 @@ void programaPG(int A1, int razao, int qtdTermos) {
     }
     printf(")\n");
 
-    int somaPA;
-    extraiRAM(RAM, 1, &somaPA);
-    printf("Soma dos termos: %d\n", somaPA);
+    int somaPG;
+    extraiRAM(RAM, 1, &somaPG);
+    printf("Soma dos termos: %d\n", somaPG);
 
     // printRam(RAM, (6 + qtdTermos));
     liberaRAM(RAM);
@@ -453,7 +445,6 @@ void programaTrianguloRet(int catA, int catB) {
 
 
     salvaDoisValores(RAM, 7, catA, 8, catB);
-    //Ram -> [0, 0, 0, 0, 0, 0, 0, cateto A, cateto B, 0]
 
     int catA_maq;
     int catB_maq;
@@ -461,7 +452,7 @@ void programaTrianguloRet(int catA, int catB) {
     extraiRAM(RAM, 8, &catB_maq);
 
     programaMultiplica(RAM, catA_maq, catA_maq);
-    //Ram -> [A², 0, 0, 0, 0, 0, 0, cateto A, cateto B, 0]
+    //Ram -> [A², LIXO, 0, 0, 0, 0, 0, cateto A, cateto B, 0]
 
     Instrucao moveCAT[3];
     moveCAT[0].opcode = 3;
@@ -475,10 +466,8 @@ void programaTrianguloRet(int catA, int catB) {
     moveCAT[2].opcode = -1;
     maquina(RAM, moveCAT);
     programaMultiplica(RAM, catB_maq, catB_maq);
-    //Ram -> [B², 0, A², 0, 0, 0, 0, cateto A, cateto B, 0]
 
     Instrucao somaCAT[2];
-
     somaCAT[0].opcode = 0;
     somaCAT[0].endereco1 = 0;
     somaCAT[0].endereco2 = 2;
@@ -486,13 +475,12 @@ void programaTrianguloRet(int catA, int catB) {
 
     somaCAT[1].opcode = -1;
     maquina(RAM, somaCAT);
-    //Ram -> [B², 0, A², 0, 0, 0, 0, cateto A, cateto B, A²+B²]
+    //Ram -> [B², LIXO, A², 0, 0, 0, 0, cateto A, cateto B, A²+B²]
 
     int soma;
     extraiRAM(RAM, 9, &soma); 
 
     programaRaizQuad(RAM, soma);
-    //Ram -> [raiz, LIXO, LIXO, LIXO, LIXO, LIXO, LIXO, cateto A, cateto B, A²+B²]
 
     Instrucao moveResult[3];
     moveResult[0].opcode = 3;
@@ -557,7 +545,63 @@ void programaTrianguloRet(int catA, int catB) {
     liberaRAM(RAM);
 }
 
-void programaBhaskara(int a, int b, int c) {
+void programaConverteBinario(int numeroDec) {
+    int *RAM = criaRam_vazia(100);
+
+    // Esquema RAM -> [LIXO, LIXO, LIXO, LIXO, posPreencher, numeroDec, 1, LSB, ....]
+
+    salvaDoisValores(RAM, 5, numeroDec, 6, 1);
+    salvaUmValor(RAM, 4, 7); 
+
+    //RAM -> [0, 0, 0, 0, 7, numeroDec, 1, 0, ....]
+
+    int numero;
+    extraiRAM(RAM, 5, &numero);
+
+    while (numero > 0) {
+        programaDivisao(RAM, numero, 2);
+        //RAM -> [result, resto, LIXO, LIXO, posPreencher, numeroDec, 1, 0, ....]
+
+        extraiRAM(RAM, 0, &numero); 
+
+        int resto;
+        extraiRAM(RAM, 1, &resto);
+
+        int ptr_preencher;
+        extraiRAM(RAM, 4, &ptr_preencher);
+
+        salvaUmValor(RAM, ptr_preencher, resto);
+
+        Instrucao addPtr[2];
+        addPtr[0].opcode = 0;
+        addPtr[0].endereco1 = 4;
+        addPtr[0].endereco2 = 6;
+        addPtr[0].endereco3 = 4;
+
+        addPtr[1].opcode = -1;
+        maquina(RAM, addPtr);
+    }
     
+    Instrucao subPtr[2];
+    subPtr[0].opcode = 1;
+    subPtr[0].endereco1 = 4;
+    subPtr[0].endereco2 = 6;
+    subPtr[0].endereco3 = 4;
+
+    subPtr[1].opcode = -1;
+    maquina(RAM, subPtr);
+
+    int ptr;
+    extraiRAM(RAM, 4, &ptr);
+
+    //RAM -> [LIXO, LIXO, LIXO, LIXO, posMSB, numeroDec, 1, LSB, ....]
+
+    printf("Conversao (%d)_10 = (", numeroDec);
+    for (int i = ptr; i >= 7; i--) {
+        int bit;
+        extraiRAM(RAM, i, &bit);
+        printf("%d", bit);
+    }
+    printf(")_2\n");
 }
 

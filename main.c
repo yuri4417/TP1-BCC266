@@ -12,5 +12,6 @@ int main () {
     // programaPA(0, 2, 10);
     // programaPG(1, 2, 10);
     // programaTrianguloRet(3, 5);
+    // programaConverteBinario(100000);
     return 0;
 }
