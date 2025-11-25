@@ -20,6 +20,8 @@ void programaConverteSegundos(int segundos);
 void programaPotencia(int *RAM, int base, int expoente);
 void programaFatorial(int *RAM, int n);
 void programaFibonacci(int *RAM, int n);
+void programaSomatorio(int *RAM, int indiceInicial, int nTermos,int valorInicial, int Razao);
+void programaValorAbsoluto(int *RAM, int valor);
 
 void programaMDC(int *RAM, int a, int b);
 void programaMultiplicaInterno(int *RAM, int x, int y, int destino);

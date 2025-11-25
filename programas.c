@@ -145,8 +145,6 @@ void programaDivisao(int *RAM, int dividendo, int divisor) { //RESULTADO = RAM[0
         liberaRAM(RAM);
 }
 
-
-
 void programaSQRT(int* RAM, int radicando) { //RESULTADO == RAM[0]
     int ramLocal = 0; 
     if (RAM == NULL) {
@@ -817,15 +815,14 @@ void programaConverteSegundos(int segundos) {
     liberaRAM(RAM);
 }
 
-
-void programaPotencia(int *RAM, int base, int expoente)
+void programaPotencia(int *RAM, int base, int expoente)//RESULTADO RAM[0]
 {
     int ramLocal = 0;
     if (RAM == NULL) {
-        RAM = criaRam_vazia(4);
         ramLocal = 1;
+        RAM = criaRam_vazia(5);
+        
     }
-    
     salvaDoisValores(RAM, 1, base, 2 , expoente);
 
     int externoBase, externoExpoente;
@@ -833,11 +830,8 @@ void programaPotencia(int *RAM, int base, int expoente)
     extraiRAM(RAM,1, &externoBase);
 
     extraiRAM(RAM,2, &externoExpoente);
-    int basePositiva = externoBase;
-    if (basePositiva < 0) {
-        basePositiva = -basePositiva; 
-    }
-
+    int basePositiva;
+    
     if (externoBase == 0) {
 
         if (externoExpoente <0) 
@@ -886,10 +880,13 @@ void programaPotencia(int *RAM, int base, int expoente)
             liberaRAM(RAM);
         return;
     }
-
+    programaValorAbsoluto(RAM, externoBase);
+    extraiRAM(RAM, 0,&basePositiva);
+    
     salvaUmValor(RAM, 0, basePositiva);
 
     salvaDoisValores(RAM, 1, externoBase, 2, externoExpoente);
+    salvaUmValor(RAM, 3, externoBase);
 
     for(int i = 0; i < externoExpoente - 1; i++)
     {
@@ -897,21 +894,39 @@ void programaPotencia(int *RAM, int base, int expoente)
         programaMultiplica(RAM, rAtual, basePositiva);
     }
     extraiRAM(RAM,2, &externoExpoente);
+
     int resultado;
+    
     extraiRAM(RAM,0, &resultado);
+
+    salvaUmValor(RAM, 4, resultado);
+
     if (externoBase < 0 && (externoExpoente % 2 != 0)) {
-        resultado = -resultado;
+        
+        extraiRAM(RAM, 0, &resultado);
+        programaMultiplica(RAM, resultado, 2);
+        Instrucao sub[2];
+
+        sub[0].opcode = 1;
+        sub[0].endereco1 = 4;
+        sub[0].endereco2 = 0;
+        sub[0].endereco3 = 0;
+
+        sub[1].opcode = -1;
+        maquina(RAM, sub);
+        extraiRAM(RAM, 0, &resultado);
+        
     }
-    printf("Valor da potência  %d ^ %d = %d\n\n",externoBase, externoExpoente,  resultado);
+    printf("\nValor da potência  %d ^ %d = %d\n\n",externoBase, externoExpoente,  resultado);
      if(ramLocal)
         liberaRAM(RAM);
 }
 
-void programaFatorial(int *RAM, int n)
+void programaFatorial(int *RAM, int n)//R  = Ram[0]
 {
     int ramLocal = 0;
     if (RAM == NULL) {
-        RAM = criaRam_vazia(2);
+        RAM = criaRam_vazia(4);
         ramLocal = 1;
     }
     salvaUmValor(RAM, 1, n);
@@ -932,12 +947,24 @@ void programaFatorial(int *RAM, int n)
     }
     
     salvaUmValor(RAM, 0, 1);
-
+    salvaDoisValores(RAM, 2, 0, 3, 1);
+    int contador;
     for (int i = 1; i <= externoN; i++) {
         int rAtual;
         extraiRAM(RAM, 0, &rAtual); 
+        salvaUmValor(RAM, 0,0);
+        Instrucao movPSomar[2];
+        
+        movPSomar[0].opcode = 0;
+        movPSomar[0].endereco1 = 2;
+        movPSomar[0].endereco2 = 3;
+        movPSomar[0].endereco3 = 2;
+        
+        movPSomar[1].opcode = -1;
+        maquina(RAM,movPSomar);
+        extraiRAM(RAM, 2, &contador);
+        programaMultiplica(RAM, rAtual, contador);
 
-        programaMultiplica(RAM, rAtual, i);
     }
 
     int resultado;
@@ -951,7 +978,8 @@ void programaFatorial(int *RAM, int n)
 
 }
 
-void programaFibonacci(int *RAM, int n)
+void programaFibonacci(int *RAM, int n) //R = ram[1]
+
 {
     int ramLocal = 0;
     if (RAM == NULL) {
@@ -976,7 +1004,7 @@ void programaFibonacci(int *RAM, int n)
     }
     salvaDoisValores(RAM, 0, 0, 1, 1);
     Instrucao soma[6];
-    for(int i = 2; i<=externoN-1; i++)
+    for(int i = 2; i<=externoN; i++)
     {
         soma[0].opcode  = 0;
         soma[0].endereco1 =0;
@@ -1013,8 +1041,145 @@ void programaFibonacci(int *RAM, int n)
         liberaRAM(RAM);
 }
 
+void programaValorAbsoluto(int *RAM, int valor)//Resultado RAM[0]
+
+{   
+    int ramLocal = 0;
+    if(RAM == NULL)
+    {
+
+        RAM = criaRam_vazia(3);
+        ramLocal =1;
+        if(RAM == NULL)
+        {
+            printf("Erro ao alocar memória\n\n");
+            return ;
+        }
+    }
+    salvaDoisValores(RAM, 1,0,2,valor);
+    Instrucao sub[2];
+    if(RAM[2] < 0)
+    {
+        sub[0].opcode = 1;
+        sub[0].endereco1 = 1;
+        sub[0].endereco2 = 2;
+        sub[0].endereco3 = 0;
+
+        sub[1].opcode = -1;
+        maquina(RAM, sub);
+        extraiRAM(RAM, 0,&valor);
+    }    
+    else 
+    {
+        Instrucao soma[2];
+        
+        soma[0].opcode = 0;
+        soma[0].endereco1 = 1;
+        soma[0].endereco2 =2;
+        soma[0].endereco3 = 0;
+
+        soma[1].opcode = -1;
+        maquina(RAM, soma);
+        extraiRAM(RAM, 0, &valor);
+
+        printf("\nValor após o absoluto: %d\n", valor);
+    }
+    if(ramLocal)
+        liberaRAM(RAM);
 
 
+
+
+}
+
+void programaSomatorio(int *RAM, int indiceInicial, int nTermos, int valorInicial, int Razao)// Resultado RAM[0]
+{
+    int criaRam=0;
+    if(RAM == NULL) 
+    {
+        criaRam = 1;
+        RAM = criaRam_vazia(6); 
+        //RAM[0] = RESULTADO, RAM[1]  = indiceInicial RAM[2] = Razão, RAM[3] =nTermos, RAM[4] = valor inicial 
+          
+        if(RAM == NULL)
+        {
+            printf("Erro ao criar a ram, encerrando o programa!");
+            return ;
+        } 
+    }
+    salvaUmValor(RAM, 1, indiceInicial);
+    Instrucao obterNTermos[2];    
+    if(RAM[1] < 0 )
+    {
+        programaValorAbsoluto(RAM, RAM[1]);
+        // o modulo será salvo na posição RAM[0]
+        obterNTermos[0].opcode = 0;
+        obterNTermos[0].endereco1 = 0;
+        salvaUmValor(RAM, 3,nTermos);
+        obterNTermos[0].endereco2 = 3;
+        obterNTermos[0].endereco3 = 3;
+        obterNTermos[1].opcode = -1;
+        maquina(RAM, obterNTermos);// em RAM[3] ESTÁ O TOTAL DE TERMOS
+    }
+    
+    else
+    {
+        obterNTermos[0].opcode=1;
+         
+        salvaUmValor(RAM, 3, nTermos);
+        obterNTermos[0].endereco1 =   3;
+        obterNTermos[0].endereco2 =1;
+        obterNTermos[0].endereco3 = 3;
+
+        obterNTermos[1].opcode = -1;
+        maquina(RAM, obterNTermos);
+        //resultado do numero de termos absoluto será salvo na posição 3
+        // isso vai obeter o numero de vezes que vai ser realizada a  sub, obtendo o númeor de incremento "Real"
+
+    }
+    extraiRAM(RAM, 3, &nTermos);
+    salvaDoisValores(RAM, 0, valorInicial, 2, Razao);
+    extraiRAM(RAM, 0,&valorInicial);
+    salvaUmValor(RAM, 5, valorInicial);
+    Instrucao soma[3];
+    printf("\n");
+    for(int i=0;i<nTermos-1;i++)
+    {
+        
+        soma[0].opcode = 0;
+        soma[0].endereco1 = 0;
+        soma[0].endereco2 = 2;
+        soma[0].endereco3 = 0;
+        
+        soma[1].opcode = 0;
+        soma[1].endereco1 = 0;
+        soma[1].endereco2 = 5;
+        soma[1].endereco3 = 5; // o somatório está salvo no indice 5 da ram
+        
+        soma[2].opcode = -1;
+        maquina(RAM, soma);
+
+    }
+    Instrucao moverR[3];
+    moverR[0].opcode = 3;
+    moverR[0].endereco1 = 1;
+    moverR[0].endereco2 = 5;
+
+    moverR[1].opcode = 2;
+    moverR[1].endereco1 =1;
+    moverR[1].endereco2 =0;
+
+    moverR[2].opcode = -1;
+    maquina(RAM, moverR);
+    int resultado;
+    extraiRAM(RAM, 0, &resultado);
+    printf("\nResultado do somatório: %d\n\n", resultado);
+    if(criaRam )
+    {
+        liberaRAM(RAM);
+        RAM = NULL;
+    }
+}
 
 void programaMDC(int *RAM, int a, int b) {
     int local = 0;

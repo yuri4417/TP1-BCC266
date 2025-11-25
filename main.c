@@ -17,11 +17,13 @@ int main () {
     // programaCombSimples(10,2);
     // programaArranjoSimples(10, 2);
     // programaFormulaHeron(10, 11, 12);
-    programaConverteSegundos(3665);
+    //programaConverteSegundos(3665);
 
-    // programaPotencia(NULL, 4, 2);
-    // programaFatorial(NULL, 8);
-    // programaFibonacci(NULL, 8);
+    //programaPotencia(NULL, -2, 3);
+    //programaFatorial(NULL, 12);
+    //programaFibonacci(NULL, 8);
+    //programaValorAbsoluto(NULL, -1000 );
+    //programaSomatorio(NULL,0, 4, 20, -5);
 
     // programaMDC(NULL, int a, int b);
     // programaMultiplicaInterno(NULL, int x, int y, int destino);
