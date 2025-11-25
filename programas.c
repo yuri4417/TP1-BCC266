@@ -832,6 +832,8 @@ void programaMultiplicaMatrizes(int *matA, int *matB, int N) {
             programaMultiplica(RAM, i, N);
             int mult;
             extraiRAM(RAM, 0, &mult);
+
+            //salva matA
             salvaUmValor(RAM, 1, j);
 
             Instrucao somaJ[2];
@@ -853,8 +855,6 @@ void programaMultiplicaMatrizes(int *matA, int *matB, int N) {
 
 
             // salva matB
-
-
             salvaDoisValores(RAM, 0, mult, 1, j);
             maquina(RAM, somaJ);
 
