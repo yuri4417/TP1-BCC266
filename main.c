@@ -1,5 +1,6 @@
 #include <time.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include "programas.h"
 
 
@@ -22,8 +23,10 @@ int main () {
     // int matB[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     // programaMultiplicaMatrizes(matA, matB, 3);
 
-    
-    //programaPotencia(NULL, -2, 2);
+
+    //char palavra[]= "Cingaru da cancer";
+    //programaCriptografarCifraCesar( NULL, 13, palavra );
+    //programaPotencia(NULL, 5, 0);
     //programaFatorial(NULL, 12);
     //programaFibonacci(NULL, 8);
     //programaValorAbsoluto(NULL, -1000 );

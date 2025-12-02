@@ -23,6 +23,8 @@ void programaFatorial(int *RAM, int n);
 void programaFibonacci(int *RAM, int n);
 void programaSomatorio(int *RAM, int indiceInicial, int nTermos,int valorInicial, int Razao);
 void programaValorAbsoluto(int *RAM, int valor);
+void programaCriptografarCifraCesar( int *RAM, int rotacao, char *palavra );
+void programaMinusculapMaiuscula(int *RAM, char *palavra);
 
 void programaMDC(int *RAM, int a, int b);
 void programaMultiplicaInterno(int *RAM, int x, int y, int destino);

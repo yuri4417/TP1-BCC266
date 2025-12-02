@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <limits.h>
+#include <string.h>
 
 
 void programaAleatorio(int qtdeInstrucoes) {
@@ -1017,20 +1018,24 @@ void programaPotencia(int *RAM, int base, int expoente) // RESULTADO RAM[0]
         else if (externoExpoente == 0) 
             printf("Erro: %d ^ %d Resultado indeterminado\n", externoBase, externoExpoente); 
         else 
+        {
+            salvaUmValor(RAM, 0, 0);
             printf("%d ^ %d = %d\n", externoBase, externoExpoente, 0); 
-        
+        }
         if (ramLocal) 
             liberaRAM(RAM);
         return;
     }
 
     if (externoExpoente == 0) {
+        salvaUmValor(RAM, 0,1);
         printf("%d ^ %d = %d\n", externoBase, externoExpoente, 1);
         if (ramLocal) liberaRAM(RAM);
         return;
     }
 
     if (externoBase == 1) {
+        salvaUmValor(RAM, 0, 1);
         printf("%d ^ %d = %d\n", externoBase, externoExpoente, 1);
         if (ramLocal) liberaRAM(RAM);
         return;
@@ -1038,16 +1043,23 @@ void programaPotencia(int *RAM, int base, int expoente) // RESULTADO RAM[0]
 
     if (externoBase == -1) {
         programaDivisao(RAM, RAM[2], 2);
-        if (RAM[1] == 0) 
+        if (RAM[1] == 0)
+        { 
+            salvaUmValor(RAM, 0, 1);
             printf("%d ^ %d = %d\n", externoBase, externoExpoente, 1);
+        }
         else 
-            printf("%d ^ %d = %d\n", externoBase, externoExpoente, -1); 
+        {
+            salvaUmValor(RAM, 0, -1);
+            printf("%d ^ %d = %d\n", externoBase, externoExpoente, -1);
+        }
         if (ramLocal) 
             liberaRAM(RAM);
         return;
     }
 
     if (externoExpoente < 0) {
+        salvaUmValor(RAM, 0,0);
         printf("%d ^ %d = %d\n", externoBase, externoExpoente, 0);
         if (ramLocal) liberaRAM(RAM);
         return;
@@ -1079,30 +1091,25 @@ void programaPotencia(int *RAM, int base, int expoente) // RESULTADO RAM[0]
 
     extraiRAM(RAM, 1, &resto); 
     
-    printf("Resto da divisao do expoente: %d\n\n", resto);
-
     if (externoBase < 0 && resto != 0) {
+        salvaUmValor(RAM, 0, 0); // RAM[0] = 0
         
-        extraiRAM(RAM, 4, &resultado); 
+        Instrucao nega[2];
+        nega[0].opcode = 1;      
+        nega[0].endereco1 = 0;   
+        nega[0].endereco2 = 4;   // Valor Positivo RAM[4]
+        nega[0].endereco3 = 0;   // Destino RAM[0] = -Valor
         
-        // Zera RAM[0] para calcular o dobro corretamente
-        salvaUmValor(RAM, 0, 0);
-        programaMultiplica(RAM, resultado, 2);
+        nega[1].opcode = -1;
+        maquina(RAM, nega);
         
-        Instrucao sub[2];
-        sub[0].opcode = 1;
-        sub[0].endereco1 = 4; // X
-        sub[0].endereco2 = 0; // 2X
-        sub[0].endereco3 = 0; // Resultado: X - 2X = -X
-
-        sub[1].opcode = -1;
-        maquina(RAM, sub);
-        
-        extraiRAM(RAM, 0, &resultado); // Atualiza a variável com o valor negativo
-    }
+        extraiRAM(RAM, 0, &resultado); // Atualiza variável para o printf
+    } 
+    else 
+        salvaUmValor(RAM, 0, resultado);
     
 
-    printf("\nValor da potência  %d ^ %d = %d\n\n", externoBase, externoExpoente, resultado);
+    printf("\nValor da potência %d ^ %d = %d\n\n", externoBase, externoExpoente, resultado);
     
     if(ramLocal)
         liberaRAM(RAM);
@@ -1366,6 +1373,254 @@ void programaSomatorio(int *RAM, int indiceInicial, int nTermos, int valorInicia
         RAM = NULL;
     }
 }
+
+void programaCriptografarCifraCesar( int *RAM, int rotacao, char *palavra )
+{
+    
+    int criaRam =0; 
+    int tamStr;//RAM[2]estará salvo o número de caracteress
+    if(RAM == NULL)
+    {
+        RAM = criaRam_vazia(1000);
+        criaRam=1;
+    }
+
+    salvaUmValor(RAM, 19, 26);
+    salvaUmValor(RAM, 10, rotacao); //RAM [10]  = valor da rotação de letras para a criptografia
+    salvaUmValor(RAM, 11,0); //para contar TAM STR
+    salvaUmValor(RAM, 12, 1); //RAM[12]SALVO PARA FAZER O CONTADOR
+
+    int rotacaoPositiva;// caso a rotação seja pela direita
+
+    programaValorAbsoluto(RAM, rotacao);
+    extraiRAM(RAM, 0, &rotacaoPositiva);
+
+    programaDivisao(RAM, rotacaoPositiva, 26);
+
+    int rotacaoFinal;
+    int resto;
+    extraiRAM(RAM, 1, &resto);
+    Instrucao obterRotacao[2];
+    if(rotacao < 0 && resto != 0 )
+    {
+        obterRotacao[0].opcode = 1;
+        obterRotacao[0].endereco1 = 19;
+        obterRotacao[0].endereco2 = 1;
+        obterRotacao[0].endereco3 = 10;
+        
+        obterRotacao[1].opcode =-1;
+        maquina(RAM, obterRotacao);
+        extraiRAM(RAM, 10, &rotacaoFinal);
+    } else 
+        extraiRAM(RAM, 1, &rotacaoFinal);
+    salvaUmValor(RAM, 10, rotacaoFinal);
+
+    
+
+    
+    Instrucao soma_contador[2];
+
+    for(int i=0; palavra[i] != '\0'; i++) // vai contar quantos caracteres possuem
+    {
+
+        soma_contador[0].opcode=0;
+        soma_contador[0].endereco1 = 12;
+        soma_contador[0].endereco2 = 11;
+        soma_contador[0].endereco3 = 11;
+
+        soma_contador[1].opcode = -1;
+        maquina(RAM, soma_contador);
+
+    }
+    extraiRAM(RAM, 11, &tamStr);
+    salvaUmValor(RAM, 13, 999);
+    
+    Instrucao subtrai[2];
+    subtrai[0].opcode = 1;
+    subtrai[0].endereco1 =  13;
+    subtrai[0].endereco2 = 11;
+    subtrai[0].endereco3 =14;
+
+    subtrai[1].opcode = -1;
+    maquina(RAM, subtrai);
+    int inicioPreenchimento;// vai saber de qual posição vai começar o preenchimento da ram, qual os valores do caracterer pela tabela asc ||, ram[14], ESTAŔA O INICIO DO PREENCHIMENTO
+    
+    extraiRAM(RAM, 14, &inicioPreenchimento);
+    salvaUmValor(RAM, 15, inicioPreenchimento);
+    salvaUmValor(RAM, 16, -1);
+    int contador ; // Será para preencher os indices da ram, RAM[16] armazenar o contador para preenchimento
+    extraiRAM(RAM, 16, &contador);
+
+    int cont_preencheRam;//// vai pegar o valor do inicio e ir somando pra realizar o preenchimento nas posições da ram, RAM[15]
+    Instrucao preenchimento[2];
+
+    for(int i =0; i<tamStr; i++)
+    {
+        salvaUmValor(RAM, 16, contador);
+        
+        extraiRAM(RAM, 15, &cont_preencheRam);
+        salvaUmValor(RAM, 15, cont_preencheRam);
+
+        preenchimento[0].opcode=0;
+        preenchimento[0].endereco1 = 16;
+        preenchimento[0].endereco2 = 12;
+        preenchimento[0].endereco3 = 16;
+
+        preenchimento[1].opcode = -1;
+        maquina(RAM, preenchimento);
+        
+        preenchimento[0].opcode=0;
+        preenchimento[0].endereco1 = 15;
+        preenchimento[0].endereco2 = 12;
+        preenchimento[0].endereco3 = 15;
+
+        preenchimento[1].opcode=-1;
+        maquina(RAM, preenchimento);
+        extraiRAM(RAM, 15, &cont_preencheRam);      
+        extraiRAM(RAM, 16,&contador);
+        salvaUmValor(RAM, cont_preencheRam, palavra[contador]);
+
+    }
+    programaMinusculapMaiuscula(RAM, palavra);
+    Instrucao rotacionar[2]; //ira criptografar conforme o valor de rotacao passado
+    
+    extraiRAM(RAM, 14, &cont_preencheRam);
+    salvaUmValor(RAM, 15, cont_preencheRam);
+    int caracter;
+    int valorRotacao;
+    for(int i=0; i<tamStr; i++)
+    {
+        soma_contador[0].opcode=0;
+        soma_contador[0].endereco1 = 12;
+        soma_contador[0].endereco2 = 15;
+        soma_contador[0].endereco3 = 15;
+
+        soma_contador[1].opcode = -1;
+        maquina(RAM, soma_contador);
+        extraiRAM(RAM, 15, &cont_preencheRam);
+        extraiRAM(RAM, cont_preencheRam, &caracter);
+        if(caracter >= 65 && caracter <= 90)
+        {
+            
+            rotacionar[0].opcode = 0;
+            rotacionar[0].endereco1 = 10;
+            rotacionar[0].endereco2 = cont_preencheRam;
+            rotacionar[0].endereco3 = cont_preencheRam;
+            rotacionar[1].opcode = -1;
+            maquina(RAM, rotacionar);
+            
+            
+            extraiRAM(RAM, cont_preencheRam, &valorRotacao);
+            
+            if(valorRotacao > 90)
+            {
+                salvaUmValor(RAM, 20, valorRotacao); // Salva para subtrair
+                
+                Instrucao subtraiChar[2];
+                subtraiChar[0].opcode = 1; 
+                subtraiChar[0].endereco1 = 20;
+                subtraiChar[0].endereco2 = 19; // Valor 26
+                subtraiChar[0].endereco3 = cont_preencheRam;
+                subtraiChar[1].opcode = -1;
+                maquina(RAM, subtraiChar);
+            }
+        }
+        
+        extraiRAM(RAM, cont_preencheRam, &caracter);
+        
+    }
+    Instrucao moveString[3];
+    salvaUmValor(RAM, 16, -1);
+    salvaUmValor(RAM, 15, inicioPreenchimento);
+    int valorCriptografado;
+    for(int i=0; i<tamStr; i++)
+    {
+        soma_contador[0].opcode =0 ;
+        soma_contador[0].endereco1 = 12;
+        soma_contador[0].endereco2 =16;
+        soma_contador[0].endereco3 = 16;
+        soma_contador[1].opcode = -1;
+        maquina(RAM, soma_contador);
+        extraiRAM(RAM, 16, &contador); 
+        
+        preenchimento[0].opcode = 0;
+        preenchimento[0].endereco1 = 15;
+        preenchimento[0].endereco2 = 12;
+        preenchimento[0].endereco3 = 15;
+
+        preenchimento[1].opcode = -1;
+        maquina(RAM, preenchimento);
+        extraiRAM(RAM, 15, &cont_preencheRam);
+        
+        moveString[0].opcode = 3;
+        moveString[0].endereco1 = 1;
+        moveString[0].endereco2 = cont_preencheRam;
+
+        moveString[1].opcode = 5;
+        moveString[1].endereco1 = 1;
+        moveString[1].endereco2 = -1;
+
+        
+        moveString[2].opcode = -1;
+        maquina(RAM, moveString);
+        valorCriptografado = moveString[1].endereco2;
+        palavra[contador] = valorCriptografado;
+        
+
+    }
+    
+    printf("Palavra criptografada: %s\n\n", palavra );
+    if(criaRam)
+    {
+        liberaRAM(RAM);
+        RAM = NULL;
+
+    }
+
+}    
+
+void programaMinusculapMaiuscula(int *RAM, char *palavra)
+{
+    int tamStr;
+    int caracter;
+    extraiRAM(RAM, 11, &tamStr);
+    int indice;
+    Instrucao contador[2];
+    salvaUmValor(RAM, 17, 32);// vai realizar a subtração para converter para maiusculo
+    extraiRAM(RAM, 14, &indice);
+    salvaUmValor(RAM, 18, indice);//RAM[18 ] O contador para converter para maiuscuka
+    //printf("Letras maiúsculas: ");
+    for(int i=0; i<tamStr; i++)
+    {
+        
+        contador[0].opcode=0;
+        contador[0].endereco1 =  18;
+        contador[0].endereco2 = 12;
+        contador[0].endereco3 = 18;
+        
+        contador[1].opcode = -1;
+        maquina(RAM, contador);
+        extraiRAM(RAM, 18, &indice);
+        extraiRAM(RAM, indice, &caracter );
+        if(caracter >= 97 && caracter <=122)
+        {
+            Instrucao subtrai[2];
+            salvaUmValor(RAM, indice, caracter);
+            subtrai[0].opcode= 1;
+            subtrai[0].endereco1 = indice;
+            subtrai[0].endereco2 = 17;
+            subtrai[0].endereco3 = indice;
+
+            subtrai[1].opcode = -1;
+            maquina(RAM,subtrai);
+        }
+        extraiRAM(RAM, indice, &caracter);
+        //printf("%c", caracter);
+        
+    }
+    //printf("\n");
+}
+
 
 
 
