@@ -1385,7 +1385,7 @@ void programaCriptografarCifraCesar( int *RAM, int rotacao, char *palavra )
         criaRam=1;
     }
 
-    salvaUmValor(RAM, 19, 26);
+    salvaUmValor(RAM, 19, 26); ///RAM[19], estará salvo 26 para realizar a subtracao, caso a rotação seja maior que 90
     salvaUmValor(RAM, 10, rotacao); //RAM [10]  = valor da rotação de letras para a criptografia
     salvaUmValor(RAM, 11,0); //para contar TAM STR
     salvaUmValor(RAM, 12, 1); //RAM[12]SALVO PARA FAZER O CONTADOR
@@ -1532,7 +1532,7 @@ void programaCriptografarCifraCesar( int *RAM, int rotacao, char *palavra )
     Instrucao moveString[3];
     salvaUmValor(RAM, 16, -1);
     salvaUmValor(RAM, 15, inicioPreenchimento);
-    int valorCriptografado;
+    
     for(int i=0; i<tamStr; i++)
     {
         soma_contador[0].opcode =0 ;
@@ -1563,8 +1563,7 @@ void programaCriptografarCifraCesar( int *RAM, int rotacao, char *palavra )
         
         moveString[2].opcode = -1;
         maquina(RAM, moveString);
-        valorCriptografado = moveString[1].endereco2;
-        palavra[contador] = valorCriptografado;
+        palavra[contador] = moveString[1].endereco2;
         
 
     }
@@ -1622,173 +1621,273 @@ void programaMinusculapMaiuscula(int *RAM, char *palavra)
 }
 
 
+void programaMultiplicaInterno(int *RAM, int x, int y, int destino) {
+    int ramLocal = 0;
 
+    // Se não passar uma RAM, cria uma nova só pra esse programa
+    if (RAM == NULL) {
+        RAM = criaRam_vazia(10);
+        ramLocal = 1;
+    }
+
+    /*
+       Aqui eu vou usar a RAM desse jeito:
+
+       RAM[0] = acumulador que vai guardar o resultado final
+       RAM[1] = x (valor que vai somar várias vezes)
+       RAM[2] = y (contador de quantas vezes somar)
+       RAM[3] = número 1 (pra fazer decremento)
+       RAM[destino] = onde vai ficar o resultado final
+    */
+
+    salvaDoisValores(RAM, 1, x, 2, y);
+    salvaUmValor(RAM, 0, 0);   // acumulador começa em 0
+    salvaUmValor(RAM, 3, 1);   // constante 1
+
+    int contador;
+    extraiRAM(RAM, 2, &contador);
+
+    // Enquanto ainda tiver vezes pra somar...
+    while (contador > 0) {
+
+        // Aqui eu faço acumulador = acumulador + x
+        Instrucao soma[2];
+        soma[0].opcode = 0;  // soma
+        soma[0].endereco1 = 0;
+        soma[0].endereco2 = 1;
+        soma[0].endereco3 = 0;
+        soma[1].opcode = -1;
+        maquina(RAM, soma);
+
+        // Aqui diminuo o contador: y = y - 1
+        Instrucao sub[2];
+        sub[0].opcode = 1;   // subtração
+        sub[0].endereco1 = 2;
+        sub[0].endereco2 = 3;
+        sub[0].endereco3 = 2;
+        sub[1].opcode = -1;
+        maquina(RAM, sub);
+
+        extraiRAM(RAM, 2, &contador); // atualiza contador
+    }
+
+    // Quando acabar, salvo o resultado no destino
+    int r;
+    extraiRAM(RAM, 0, &r);
+    salvaUmValor(RAM, destino, r);
+
+    // Se a RAM foi criada só pra cá, libera
+    if (ramLocal)
+        liberaRAM(RAM);
+}
 
 void programaMDC(int *RAM, int a, int b) {
-    int local = 0;
+    int ramLocal = 0;
+
+    // Se não passar RAM externa, crio uma pra esse programa
     if (RAM == NULL) {
-        RAM = criaRam_vazia(4);
-        local = 1;
+        RAM = criaRam_vazia(10);
+        ramLocal = 1;
+    }
+
+    /*
+        Layout que usei aqui:
+
+        RAM[0] = a
+        RAM[1] = b
+        RAM[2] = temp (para trocas)
+    */
+
+    salvaDoisValores(RAM, 0, a, 1, b);
+    // extrai os valores da ran pra usar
+    int A, B;  
+    extraiRAM(RAM, 0, &A);
+    extraiRAM(RAM, 1, &B);
+
+    // Método do MDC usando subtrações sucessivas
+    while (B != 0) {
+
+        // Enquanto A ainda é maior ou igual a B, reduz A
+        while (A >= B) {
+            Instrucao sub[2];
+            sub[0].opcode = 1; // sub
+            sub[0].endereco1 = 0;
+            sub[0].endereco2 = 1;
+            sub[0].endereco3 = 0;
+            sub[1].opcode = -1;
+            maquina(RAM, sub);
+
+            extraiRAM(RAM, 0, &A);
+        }
+
+        // troca A e B: agora A = B e B = resto
+        salvaUmValor(RAM, 2, A);
+        salvaUmValor(RAM, 0, B);
+        salvaUmValor(RAM, 1, A);
+
+        extraiRAM(RAM, 0, &A);
+        extraiRAM(RAM, 1, &B);
+    }
+
+    printf("MDC = %d\n", A);
+
+    if (ramLocal)
+        liberaRAM(RAM);
+}
+
+void programaMMC(int *RAM, int a, int b) {
+    int ramLocal = 0;
+
+    if (RAM == NULL) {
+        RAM = criaRam_vazia(20);
+        ramLocal = 1;
     }
 
     // RAM[0] = a
     // RAM[1] = b
-    {
-        Instrucao init[5];
+    salvaDoisValores(RAM, 0, a, 1, b);
 
-        init[0].opcode = 4; init[0].endereco1 = 1; init[0].endereco2 = a;
-        init[1].opcode = 2; init[1].endereco1 = 1; init[1].endereco2 = 0;
+    // produto = a * b → salvo em RAM[2]
+    programaMultiplicaInterno(RAM, a, b, 2);
 
-        init[2].opcode = 4; init[2].endereco1 = 1; init[2].endereco2 = b;
-        init[3].opcode = 2; init[3].endereco1 = 1; init[3].endereco2 = 1;
+    int prod;
+    extraiRAM(RAM, 2, &prod);
 
-        init[4].opcode = -1;
-        maquina(RAM, init);
-    }
-
-    // LOOP EUCLIDES (por subtrações)
-    while (1) {
-        int A = RAM[0];
-        int B = RAM[1];
-
-        if (A == B) break;
-
-        Instrucao prog[2];
-
-        if (A > B) {
-            // RAM[0] = RAM[0] - RAM[1]
-            prog[0].opcode = 1;
-            prog[0].endereco1 = 0;
-            prog[0].endereco2 = 1;
-            prog[0].endereco3 = 0;
-        } else {
-            // RAM[1] = RAM[1] - RAM[0]
-            prog[0].opcode = 1;
-            prog[0].endereco1 = 1;
-            prog[0].endereco2 = 0;
-            prog[0].endereco3 = 1;
-        }
-
-        prog[1].opcode = -1;
-
-        maquina(RAM, prog);
-    }
-
-    // imprimir
-    Instrucao out[3];
-    out[0].opcode = 3; out[0].endereco1 = 1; out[0].endereco2 = 0; // RAM[0] → reg1
-    out[1].opcode = 5; out[1].endereco1 = 1; out[1].endereco2 = -1; // print
-    out[2].opcode = -1;
-
-    maquina(RAM, out);
-
-    printf("MDC = %d\n", out[1].endereco2);
-
-    if (local) liberaRAM(RAM);
-}
-
-void programaMultiplicaInterno(int *RAM, int x, int y, int destino) {
-    // resultado ficará em RAM[destino]
-    // RAM[2] = acumulador
-    // RAM[3] = contador
-
-    int local = 0;
-    if (RAM == NULL) {
-        RAM = criaRam_vazia(8);
-        local = 1;
-    }
-
-    // zera acumulador
-    {
-        Instrucao init[6];
-
-        // RAM[2] = 0
-        init[0].opcode = 4; init[0].endereco1 = 1; init[0].endereco2 = 0;
-        init[1].opcode = 2; init[1].endereco1 = 1; init[1].endereco2 = 2;
-
-        // RAM[3] = y (contador)
-        init[2].opcode = 4; init[2].endereco1 = 1; init[2].endereco2 = y;
-        init[3].opcode = 2; init[3].endereco1 = 1; init[3].endereco2 = 3;
-
-        // RAM[4] = x
-        init[4].opcode = 4; init[4].endereco1 = 1; init[4].endereco2 = x;
-        init[5].opcode = 2; init[5].endereco1 = 1; init[5].endereco2 = 4;
-
-        maquina(RAM, init);
-    }
-
-    // loop: acum = acum + x  (feito via subtração negativa)
-    while (RAM[3] > 0) {
-
-        // acum = acum - ( -x )
-        Instrucao somar[3];
-
-        somar[0].opcode = 1; // subtrai
-        somar[0].endereco1 = 2; // RAM[2] = ...
-        somar[0].endereco2 = 4; // RAM[2] - RAM[4]
-        somar[0].endereco3 = 2;
-
-        somar[1].opcode = -1;
-
-        maquina(RAM, somar);
-
-        // decrementa contador
-        Instrucao dec[3];
-        dec[0].opcode = 1;
-        dec[0].endereco1 = 3;
-        dec[0].endereco2 = 4; // subtrai x? não — precisamos RAM[5] = 1
-        dec[0].endereco3 = 3;
-        dec[1].opcode = -1;
-
-        maquina(RAM, dec);
-
-        RAM[3]--; // para controle do while
-    }
-
-    // copiar acumulador para destino
-    Instrucao fim[4];
-    fim[0].opcode = 3; fim[0].endereco1 = 1; fim[0].endereco2 = 2; // RAM[2] → reg1
-    fim[1].opcode = 2; fim[1].endereco1 = 1; fim[1].endereco2 = destino; // reg1 → RAM[destino]
-    fim[2].opcode = -1;
-    maquina(RAM, fim);
-
-    if (local) liberaRAM(RAM);
-}
-
-void programaMMC(int *RAM, int a, int b) {
-    int local = 0;
-    if (RAM == NULL) {
-        RAM = criaRam_vazia(8);
-        local = 1;
-    }
-
-    // 1) MDC usando a máquina
+    // mdc = mdc(a,b) → cai em RAM[0]
     programaMDC(RAM, a, b);
 
-    int mdc = RAM[0];
+    int mdc;
+    extraiRAM(RAM, 0, &mdc);
+    
+//Prepara RAM para divisão por subtrações:
+    // RAM[3] = resto
+    // RAM[4] = mdc
+    // RAM[5] = contador
+    // RAM[6] = 1
+    salvaUmValor(RAM, 3, prod); 
+    salvaUmValor(RAM, 4, mdc);
+    salvaUmValor(RAM, 5, 0);
+    salvaUmValor(RAM, 6, 1);
 
-    // 2) multiplicação usando máquina
-    programaMultiplicaInterno(RAM, a, b, 5); // RAM[5] = a*b
+    while (1) {
 
-    int produto = RAM[5];
+        // compara resto >= mdc lendo da RAM
+        int R, M;
+        extraiRAM(RAM, 3, &R);
+        extraiRAM(RAM, 4, &M);
 
-    // 3) divisão produto/mdc só com subtrações
-    RAM[6] = 0;     // quociente
-    RAM[7] = produto;
+        if (R < M) break;
 
-    while (RAM[7] > 0) {
-        // RAM[7] = RAM[7] - mdc
-        Instrucao sub[3];
-        sub[0].opcode = 4; sub[0].endereco1 = 1; sub[0].endereco2 = mdc;
-        sub[1].opcode = 1; sub[1].endereco1 = 7; sub[1].endereco2 = 1; sub[1].endereco3 = 7;
-        sub[2].opcode = -1;
+        // resto = resto - mdc
+        Instrucao sub[2];
+        sub[0].opcode = 1;
+        sub[0].endereco1 = 3;
+        sub[0].endereco2 = 4;
+        sub[0].endereco3 = 3;
+        sub[1].opcode = -1;
         maquina(RAM, sub);
 
-        RAM[7] -= mdc;
-        RAM[6]++;  // quociente++
+        // contador = contador + 1
+        Instrucao inc[2];
+        inc[0].opcode = 0;
+        inc[0].endereco1 = 5;
+        inc[0].endereco2 = 6;
+        inc[0].endereco3 = 5;
+        inc[1].opcode = -1;
+        maquina(RAM, inc);
     }
 
-    printf("MMC = %d\n", RAM[6]);
+    int mmc;
+    extraiRAM(RAM, 5, &mmc);
 
-    if (local) liberaRAM(RAM);
+    printf("MMC = %d\n", mmc);
+
+    if (ramLocal)
+        liberaRAM(RAM);
 }
+
+void programaPrimo(int *RAM, int n) {
+    int ramLocal = 0;
+    if (RAM == NULL) {
+        RAM = criaRam_vazia(30);
+        ramLocal = 1;
+    }
+
+    // guardando o n e preparando as variáveis
+    salvaUmValor(RAM, 0, n);   // RAM[0] = n
+    salvaUmValor(RAM, 1, 2);   // divisor começa em 2
+    salvaUmValor(RAM, 2, 1);   // constante 1 (uso pra incrementar)
+    salvaUmValor(RAM, 5, 0);   // constante 0
+    salvaUmValor(RAM, 6, 1);   // começo assumindo que é primo
+
+    int valorN = n;
+    extraiRAM(RAM, 0, &valorN);
+
+    // números menores que 2 já não são primos
+    if (valorN < 2) {
+        printf("Nao primo\n");
+        if (ramLocal) liberaRAM(RAM);
+        return;
+    }
+
+    int divisor;
+    extraiRAM(RAM, 1, &divisor);
+
+    // loop pra testar os divisores de 2 até n-1
+    while (divisor < valorN) {
+
+        // copio n pra RAM[3] pra testar a divisao
+        salvaUmValor(RAM, 3, valorN);
+
+        int temp, d;
+        extraiRAM(RAM, 3, &temp);
+        extraiRAM(RAM, 1, &d);
+
+        // aqui eu tento fazer "temp % divisor"
+        // usando só subtração da máquina
+        while (temp >= d) {
+
+            Instrucao sub[2];
+            sub[0].opcode = 1;       // subtração
+            sub[0].endereco1 = 3;    // temp
+            sub[0].endereco2 = 1;    // divisor
+            sub[0].endereco3 = 3;    // salva temp de novo
+            sub[1].opcode = -1;
+
+            maquina(RAM, sub);
+
+            extraiRAM(RAM, 3, &temp);
+        }
+
+        // se o resto deu 0, então não é primo
+        if (temp == 0) {
+            salvaUmValor(RAM, 6, 0); // marca como "não primo"
+            break;
+        }
+
+        // senão, aumenta o divisor (+1)
+        Instrucao inc[2];
+        inc[0].opcode = 0;        // soma
+        inc[0].endereco1 = 1;     // divisor
+        inc[0].endereco2 = 2;     // +1
+        inc[0].endereco3 = 1;     // salva de novo
+        inc[1].opcode = -1;
+
+        maquina(RAM, inc);
+
+        extraiRAM(RAM, 1, &divisor);
+    }
+
+    // no final eu vejo se flag ficou 1 ou 0
+    int flag;
+    extraiRAM(RAM, 6, &flag);
+
+    if (flag == 1)
+        printf("%d eh PRIMO\n", n);
+    else
+        printf("%d NAO eh primo\n", n);
+
+    if (ramLocal)
+        liberaRAM(RAM);
+}
+

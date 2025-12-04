@@ -23,17 +23,20 @@ int main () {
     // int matB[] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
     // programaMultiplicaMatrizes(matA, matB, 3);
 
-
-    //char palavra[]= "Cingaru da cancer";
+    //char palavra[]= "Luisinho da perna fina";
     //programaCriptografarCifraCesar( NULL, 13, palavra );
-    //programaPotencia(NULL, 5, 0);
-    //programaFatorial(NULL, 12);
+    //programaPotencia(NULL, 5, 5);
+    //programaFatorial(NULL, 3);
     //programaFibonacci(NULL, 8);
     //programaValorAbsoluto(NULL, -1000 );
     //programaSomatorio(NULL,0, 4, 20, -5);
 
-    // programaMDC(NULL, int a, int b);
-    // programaMultiplicaInterno(NULL, int x, int y, int destino);
-    // programaMMC(NULL, int a, int b);
+
+    //programaMDC(NULL, 12, 8);                     
+    //programaMultiplicaInterno(NULL, 5, 3, 5);
+    //programaMMC(NULL, 6, 8);       
+    //programaPrimo(NULL, 17);
+
     return 0;
+
 }

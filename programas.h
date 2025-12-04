@@ -26,9 +26,10 @@ void programaValorAbsoluto(int *RAM, int valor);
 void programaCriptografarCifraCesar( int *RAM, int rotacao, char *palavra );
 void programaMinusculapMaiuscula(int *RAM, char *palavra);
 
+
 void programaMDC(int *RAM, int a, int b);
 void programaMultiplicaInterno(int *RAM, int x, int y, int destino);
 void programaMMC(int *RAM, int a, int b);
-
+void programaPrimo(int *RAM, int n);
 
 #endif
