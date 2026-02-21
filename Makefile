@@ -1,17 +1,28 @@
-tporg: main.o maquina.o programas.o ram.o
-	gcc -Wall main.o maquina.o programas.o ram.o -o tporg -lm
+EXEC = exe
+CC = gcc
+CFLAGS = -Wall -Wextra -Iinclude -g 
+LIBS = -lncurses
 
-ram.o: ram.c 
-	gcc -Wall -c ram.c
-  
-main.o: main.c
-	gcc -Wall -c main.c
+SRC_DIR = src
+OBJ_DIR = obj
 
-maquina.o: maquina.c
-	gcc -Wall -c maquina.c
+SRCS = $(wildcard $(SRC_DIR)/*.c)
+OBJS = $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRCS))
 
-programas.o: programas.c
-	gcc -Wall -c programas.c
-    
+all: $(EXEC)
+
+$(EXEC): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LIBS)
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
+	@mkdir -p $(OBJ_DIR)
+	@echo "Compilando: $<"
+	$(CC) $(CFLAGS) -c $< -o $@
+
+
 clean:
-	rm -f *.o tporg
+	rm -rf $(OBJ_DIR) $(EXEC)
+	
+run: all
+	./$(EXEC)
+.PHONY: all clean run
